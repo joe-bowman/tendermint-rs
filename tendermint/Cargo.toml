@@ -62,7 +62,7 @@ ws_stream_wasm = { version = "0.6"}
 #async-tungstenite = {version="0.5", features = ["tokio-runtime"]}
 #tokio = { version = "0.2", features = ["macros"] }
 ripemd160 = "0.8"
-wasm-bindgen = { version = "0.2.63", features = ["serde-serialize"]  }
+wasm-bindgen = { version = "0.2.62", features = ["serde-serialize"]  }
 js-sys = "0.3.39"
 wasm-bindgen-futures = "0.4.13"
 serde_derive = "^1.0.59"
