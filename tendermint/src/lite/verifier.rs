@@ -16,7 +16,7 @@ use crate::lite::{
     Commit, Header, Height, Requester, SignedHeader, TrustThreshold, TrustedState, ValidatorSet,
 };
 use anomaly::ensure;
-use futures::future::{FutureExt, LocalBoxFuture};
+use futures::{FutureExt, future::LocalBoxFuture};
 use std::ops::Add;
 
 /// Returns an error if the header has expired according to the given

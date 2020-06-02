@@ -1,5 +1,4 @@
 //! Tendermint Websocket event listener client
-
 use crate::{
     block::Block,
     net,
@@ -8,14 +7,13 @@ use crate::{
     rpc::Request,
     rpc::{endpoint::subscribe, Error as RPCError},
 };
-use async_tungstenite::{tokio::connect_async, tokio::TokioAdapter, tungstenite::Message};
+use ws_stream_wasm::*;
 use futures::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::error::Error as stdError;
 
 use crate::rpc::error::Code;
-use tokio::net::TcpStream;
 
 /// There are only two valid queries to the websocket. A query that subscribes to all transactions
 /// and a query that susbscribes to all blocks.
@@ -39,7 +37,7 @@ impl EventSubscription {
 /// Event Listener over websocket.
 /// See: <https://docs.tendermint.com/master/rpc/#/Websocket/subscribe>
 pub struct EventListener {
-    socket: async_tungstenite::WebSocketStream<TokioAdapter<TcpStream>>,
+    socket: WsStream,
 }
 
 impl EventListener {
@@ -54,16 +52,16 @@ impl EventListener {
                 )));
             }
         };
-        //TODO This doesn't have any way to handle a connection over TLS
-        let (ws_stream, _unused_tls_stream) =
-            connect_async(&format!("ws://{}:{}/websocket", host, port)).await?;
+
+        let (mut _meta, ws_stream) = WsMeta::connect(&format!("ws://{}:{}/websocket", host, port), None ).await?;
+
         Ok(EventListener { socket: ws_stream })
     }
 
     /// Subscribe to event query stream over the websocket
     pub async fn subscribe(&mut self, query: EventSubscription) -> Result<(), Box<dyn stdError>> {
         self.socket
-            .send(Message::text(
+            .start_send(WsMessage::Text(
                 subscribe::Request::new(query.as_str().to_owned()).into_json(),
             ))
             .await?;
@@ -72,9 +70,9 @@ impl EventListener {
         // Wait for an empty response on subscribe
         let msg = self
             .socket
-            .next()
+            .poll_next()
             .await
-            .ok_or_else(|| RPCError::websocket_error("web socket closed"))??;
+            .ok_or_else(|| RPCError::websocket_error("web socket closed"))?;
         serde_json::from_str::<Wrapper<subscribe::Response>>(&msg.to_string())?.into_result()?;
 
         Ok(())
@@ -84,7 +82,7 @@ impl EventListener {
     pub async fn get_event(&mut self) -> Result<Option<ResultEvent>, RPCError> {
         let msg = self
             .socket
-            .next()
+            .poll_next()
             .await
             .ok_or_else(|| RPCError::websocket_error("web socket closed"))??;
 

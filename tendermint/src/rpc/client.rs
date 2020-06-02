@@ -7,8 +7,10 @@ use crate::{
     rpc::{endpoint::*, Error, Request, Response},
     Genesis,
 };
-use bytes::buf::ext::BufExt;
-use hyper::header;
+
+use wasm_bindgen::{JsCast, JsValue};
+use wasm_bindgen_futures::JsFuture;
+use web_sys::{Request as WRequest, RequestInit as WRequestInit, RequestMode as WRequestMode, Response as WResponse};
 
 /// Tendermint RPC client.
 ///
@@ -167,24 +169,29 @@ impl Client {
             }
         };
 
-        let mut request = hyper::Request::builder()
-            .method("POST")
-            .uri(&format!("http://{}:{}/", host, port))
-            .body(hyper::Body::from(request_body.into_bytes()))?;
+        let mut opts = WRequestInit::new();
+        opts.method("POST");
+        opts.mode(WRequestMode::Cors);
+        opts.body(Some(&JsValue::from_str(&request_body)));
 
-        {
-            let headers = request.headers_mut();
-            headers.insert(header::CONTENT_TYPE, "application/json".parse().unwrap());
-            headers.insert(
-                header::USER_AGENT,
-                format!("tendermint.rs/{}", env!("CARGO_PKG_VERSION"))
-                    .parse()
-                    .unwrap(),
-            );
+
+        let request = WRequest::new_with_str_and_init(&format!("http://{}:{}/", host, port), &opts)?;
+
+        request.headers().set("Content-Type", "application/json");
+        request.headers().set("User-Agent", &format!("tendermint.rs/{}", env!("CARGO_PKG_VERSION")));
+
+
+        let window = web_sys::window().unwrap();
+        let resp_value = JsFuture::from(window.fetch_with_request(&request)).await?;
+
+        // `resp_value` is a `Response` object.
+        assert!(resp_value.is_instance_of::<WResponse>());
+        let resp: WResponse = resp_value.dyn_into().unwrap();
+        let json = JsFuture::from(resp.json()?).await?;
+
+        match json.as_string() {
+            None => Err(Error::parse_error("Unable to parse JSON response")),
+            Some(val) => R::Response::from_string(val)
         }
-        let http_client = hyper::Client::builder().build_http();
-        let response = http_client.request(request).await?;
-        let response_body = hyper::body::aggregate(response.into_body()).await?;
-        R::Response::from_reader(response_body.reader())
     }
 }
