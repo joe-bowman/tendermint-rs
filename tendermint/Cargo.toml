@@ -63,7 +63,7 @@ ws_stream_wasm = { version = "0.6"}
 #tokio = { version = "0.2", features = ["macros"] }
 ripemd160 = "0.8"
 wasm-bindgen = { version = "0.2.63", features = ["serde-serialize"]  }
-js-sys = "0.3.40"
+js-sys = "0.3.39"
 wasm-bindgen-futures = "0.4.13"
 serde_derive = "^1.0.59"
 web-sys = { version = "0.3.4", features = ['Headers', 'Request', 'RequestInit', 'RequestMode', 'Response', 'Window'] }
