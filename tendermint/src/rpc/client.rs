@@ -4,7 +4,7 @@ use crate::{
     abci::{self, Transaction},
     block::Height,
     net,
-    rpc::{endpoint::*, Error, Request, Response},
+    rpc::{endpoint::*, Error, error::Code, Request, Response},
     Genesis,
 };
 
@@ -177,9 +177,16 @@ impl Client {
 
         let request = WRequest::new_with_str_and_init(&format!("http://{}:{}/", host, port), &opts)?;
 
-        request.headers().set("Content-Type", "application/json");
-        request.headers().set("User-Agent", &format!("tendermint.rs/{}", env!("CARGO_PKG_VERSION")));
-
+        let res = request.headers().set("Content-Type", "application/json");
+        match res {
+            Ok(_r) => {},
+            Err(error) => return Err(Error::new(Code::Other(-1), error.as_string())),
+        };
+        let res = request.headers().set("User-Agent", &format!("tendermint.rs/{}", env!("CARGO_PKG_VERSION")));
+        match res {
+            Ok(_r) => {},
+            Err(error) => return Err(Error::new(Code::Other(-1), error.as_string())),
+        };
 
         let window = web_sys::window().unwrap();
         let resp_value = JsFuture::from(window.fetch_with_request(&request)).await?;

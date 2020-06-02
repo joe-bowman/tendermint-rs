@@ -110,7 +110,7 @@ impl From<http::Error> for Error {
 
 impl From<wasm_bindgen::JsValue> for Error {
     fn from(fetch_error: wasm_bindgen::JsValue) -> Error {
-        Error::http_error(fetch_error.to_string())
+        Error::http_error(fetch_error.as_string().unwrap())
     }
 }
 

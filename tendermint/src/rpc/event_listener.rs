@@ -6,6 +6,7 @@ use crate::{
     rpc::response::Wrapper,
     rpc::Request,
     rpc::{endpoint::subscribe, Error as RPCError},
+    rpc::error::Code,
 };
 use ws_stream_wasm::*;
 use futures::prelude::*;
@@ -13,7 +14,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::error::Error as stdError;
 
-use crate::rpc::error::Code;
 
 /// There are only two valid queries to the websocket. A query that subscribes to all transactions
 /// and a query that susbscribes to all blocks.
@@ -61,42 +61,46 @@ impl EventListener {
     /// Subscribe to event query stream over the websocket
     pub async fn subscribe(&mut self, query: EventSubscription) -> Result<(), Box<dyn stdError>> {
         self.socket
-            .start_send(WsMessage::Text(
+            .send(WsMessage::Text(
                 subscribe::Request::new(query.as_str().to_owned()).into_json(),
             ))
             .await?;
         // TODO(ismail): this works if subscriptions are fired sequentially and no event or
         // ping message gets in the way:
         // Wait for an empty response on subscribe
-        let msg = self
+        let msg = &self
             .socket
-            .poll_next()
+            .next()
             .await
             .ok_or_else(|| RPCError::websocket_error("web socket closed"))?;
-        serde_json::from_str::<Wrapper<subscribe::Response>>(&msg.to_string())?.into_result()?;
+        let msgref: &[u8] = msg.as_ref();
+
+        serde_json::from_slice::<Wrapper<subscribe::Response>>(&msgref)?.into_result()?;
 
         Ok(())
     }
 
     /// Get the next event from the websocket
     pub async fn get_event(&mut self) -> Result<Option<ResultEvent>, RPCError> {
-        let msg = self
+        let msg = &self
             .socket
-            .poll_next()
+            .next()
             .await
-            .ok_or_else(|| RPCError::websocket_error("web socket closed"))??;
+            .ok_or_else(|| RPCError::websocket_error("web socket closed"))?;
+        let msgref: &[u8] = msg.as_ref();
 
-        if let Ok(result_event) = serde_json::from_str::<WrappedResultEvent>(&msg.to_string()) {
+
+        if let Ok(result_event) = serde_json::from_slice::<WrappedResultEvent>(&msgref) {
             // if we get an rpc error here, we will bubble it up:
             return Ok(Some(result_event.into_result()?));
         }
         dbg!("We did not receive a valid JSONRPC wrapped ResultEvent!");
-        if serde_json::from_str::<String>(&msg.to_string()).is_ok() {
+        if serde_json::from_slice::<String>(&msgref).is_ok() {
             // FIXME(ismail): Until this is a proper websocket client
             // (or the endpoint moved to grpc in tendermint), we accept whatever was read here
             // dbg! it out and return None below.
             dbg!("Instead of JSONRPC wrapped ResultEvent, we got:");
-            dbg!(&msg.to_string());
+            dbg!(&msg);
             return Ok(None);
         }
 

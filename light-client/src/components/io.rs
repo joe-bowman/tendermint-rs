@@ -79,7 +79,7 @@ impl ProdIo {
         let height: block::Height = height.into();
         let rpc_client = self.rpc_client_for(peer);
 
-        let res = block_on(async {
+        let res = futures::executor::block_on(async {
             match height.value() {
                 0 => rpc_client.latest_commit().await,
                 _ => rpc_client.commit(height).await,
@@ -98,7 +98,7 @@ impl ProdIo {
         peer: PeerId,
         height: Height,
     ) -> Result<TMValidatorSet, IoError> {
-        let res = block_on(self.rpc_client_for(peer).validators(height));
+        let res = futures::executor::block_on(self.rpc_client_for(peer).validators(height));
 
         match res {
             Ok(response) => Ok(TMValidatorSet::new(response.validators)),
@@ -116,11 +116,3 @@ impl ProdIo {
     }
 }
 
-fn block_on<F: std::future::Future>(f: F) -> F::Output {
-    tokio::runtime::Builder::new()
-        .basic_scheduler()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(f)
-}
