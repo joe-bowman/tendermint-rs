@@ -35,7 +35,7 @@ anomaly = "0.2"
 async-trait = "0.1"
 bytes = "0.5"
 chrono = { version = "0.4", features = ["serde"] }
-futures = "0.3"
+futures = "0.3.4"
 getrandom = "0.1"
 http = "0.2"
 #hyper = "0.13"
@@ -49,7 +49,7 @@ serde_repr = "0.1"
 sha2 = { version = "0.8", default-features = false }
 signatory = { version = "0.19", git = "https://github.com/joe-bowman/signatory", branch = "develop", features = ["ed25519", "ecdsa"] }
 signatory-dalek = { version = "0.19.1", git = "https://github.com/joe-bowman/signatory", branch = "develop" }
-signatory-secp256k1 = { version = "0.19", git = "https://github.com/joe-bowman/signatory", branch = "develop" }
+signatory-secp256k1 = { version = "0.19.1", git = "https://github.com/joe-bowman/signatory", branch = "develop" }
 subtle = "2"
 subtle-encoding = { version = "0.5", features = ["bech32-preview"] }
 tai64 = { version = "3", features = ["chrono"] }
