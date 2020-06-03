@@ -47,10 +47,9 @@ serde_json = { version = "1" }
 serde_bytes = "0.11"
 serde_repr = "0.1"
 sha2 = { version = "0.8", default-features = false }
-signatory = { version = "0.19", features = ["ed25519", "ecdsa"] }
-#signatory-dalek = { version = "0.19.0", git = "https://github.com/joe-bowman/signatory", branch = "develop" }
-signatory-dalek = { version = "0.19.0" }
-signatory-secp256k1 = "0.19"
+signatory = { version = "0.19", git = "https://github.com/joe-bowman/signatory", branch = "develop", features = ["ed25519", "ecdsa"] }
+signatory-dalek = { version = "0.19.1", git = "https://github.com/joe-bowman/signatory", branch = "develop" }
+signatory-secp256k1 = { version = "0.19", git = "https://github.com/joe-bowman/signatory", branch = "develop" }
 subtle = "2"
 subtle-encoding = { version = "0.5", features = ["bech32-preview"] }
 tai64 = { version = "3", features = ["chrono"] }
